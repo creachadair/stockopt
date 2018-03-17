@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"bitbucket.org/creachadair/misctools/stockopt/currency"
+	"bitbucket.org/creachadair/stockopt/currency"
 	"github.com/extrame/xls"
 )
 
