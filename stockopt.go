@@ -27,12 +27,15 @@ var (
 	capGainLimit = flag.String("gain", "$0", "Capital gain limit in USD")
 	printSummary = flag.Bool("summary", false, "Print summary of available shares and exit")
 	allowLoss    = flag.Bool("loss", false, "Allow sale of capital losses")
+	taxRate      = flag.Int("tax", 20, "Capital gains tax rate (percent)")
 )
 
 func main() {
 	flag.Parse()
 	if *inputPath == "" {
 		log.Fatal("You must provide an -input .xls path")
+	} else if *taxRate < 0 || *taxRate > 100 {
+		log.Fatal("You must provide a -tax rate between 0..100 percent")
 	}
 
 	// Convert the capital gains cap into a currency value.
@@ -105,8 +108,12 @@ func solve(es []*statement.Entry, maxGain currency.Value) {
 		soldGains += currency.Value(elt.N) * elt.Gain
 		fmt.Printf("Sell [lot %2d]: %s\n", e.Index, e.Format(elt.N))
 	}
-	fmt.Printf("\nSold shares:  %d\nSold value:   %s\nSold gains:   %s\n",
+	fmt.Printf("\nSold shares:\t%d\nSold value:\t%s\nSold gains:\t%s\n",
 		soldShares, soldValue.USD(), soldGains.USD())
+	if *taxRate > 0 {
+		tax := (soldGains * currency.Value(*taxRate)) / 100
+		fmt.Printf("%d%% gains tax:\t%s\n", *taxRate, tax.USD())
+	}
 }
 
 // es2e converts statement entries to solver entries.
