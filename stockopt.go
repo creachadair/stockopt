@@ -63,23 +63,26 @@ func main() {
 	}
 
 	// Compute the total value of the portfolio, just for cosmetics.
-	var totalValue, totalGain currency.Value
+	var totalValue, totalGain, totalBasis currency.Value
 	var totalShares int
 	for _, e := range es {
 		totalShares += e.Available
 		v := currency.Value(e.Available)
 		totalValue += v * e.Price
 		totalGain += v * e.Gain
+		totalBasis += v * e.IssuePrice
 	}
 
 	fmt.Printf(`Input file:   %q
-Minimum age:  %d months
-Gains cap:    %s
-Allow loss:   %v
-Total shares: %d
-Total value:  %s
-Total gains:  %s
-`, *inputPath, *ageMonths, maxGain.USD(), *allowLoss, totalShares, totalValue.USD(), totalGain.USD())
+Minimum age:   %d months
+Gains cap:     %s
+Allow loss:    %v
+Total shares:  %d
+Cost basis:    %s
+Present value: %s
+Total gains:   %s
+`, *inputPath, *ageMonths, maxGain.USD(), *allowLoss, totalShares,
+		totalBasis.USD(), totalValue.USD(), totalGain.USD())
 
 	// If requested, print a summary of available shares.
 	if *printSummary {
@@ -90,6 +93,7 @@ Total gains:  %s
 		return
 	}
 
+	fmt.Println()
 	solve(es, maxGain)
 }
 
@@ -99,21 +103,26 @@ func solve(es []*statement.Entry, maxGain currency.Value) {
 		return statement.EntryLess(soln[i].ID.(*statement.Entry), soln[j].ID.(*statement.Entry))
 	})
 
-	var soldValue, soldGains currency.Value
+	var soldValue, soldGains, costBasis currency.Value
 	var soldShares int
 	for _, elt := range soln {
 		e := elt.ID.(*statement.Entry)
 		soldShares += elt.N
-		soldValue += currency.Value(elt.N) * elt.Value
-		soldGains += currency.Value(elt.N) * elt.Gain
+		vn := currency.Value(elt.N)
+		costBasis += vn * e.IssuePrice
+		soldValue += vn * elt.Value
+		soldGains += vn * elt.Gain
 		fmt.Printf("Sell [lot %2d]: %s\n", e.Index, e.Format(elt.N))
 	}
-	fmt.Printf("\nSold shares:\t%d\nSold value:\t%s\nSold gains:\t%s\n",
-		soldShares, soldValue.USD(), soldGains.USD())
+	fmt.Printf("\nSold shares:\t%d\nSold value:\t%s\nSold gains:\t%s\nCost basis:\t%s\n",
+		soldShares, soldValue.USD(), soldGains.USD(), costBasis.USD())
 	if *taxRate > 0 {
 		tax := (soldGains * currency.Value(*taxRate)) / 100
 		fmt.Printf("%d%% gains tax:\t%s\n", *taxRate, tax.USD())
 	}
+
+	// N.B.: We sum the cost bases per lot instead of taking the ending bounds,
+	// so that rounding does not occur per transaction.
 }
 
 // es2e converts statement entries to solver entries.
