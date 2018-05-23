@@ -37,6 +37,7 @@ func (o *Options) filter() func(*Entry) bool {
 func (o *Options) fixPrice(e *Entry) *Entry {
 	if o != nil && o.MarketPrice > 0 {
 		e.Price = o.MarketPrice
+		e.Gain = o.MarketPrice - e.IssuePrice
 	}
 	return e
 }
