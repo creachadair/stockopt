@@ -25,6 +25,7 @@ var (
 	ageMonths    = flag.Int("age", 12, "Minimum age in months (12 months is the short-term cutoff)")
 	planFilter   = flag.String("plan", "GSU Class C", "Consider only shares issued under this plan")
 	capGainLimit = flag.String("gain", "$0", "Capital gain limit in USD")
+	marketPrice  = flag.String("market", "$0", "Market price override in USD")
 	printSummary = flag.Bool("summary", false, "Print summary of available shares and exit")
 	allowLoss    = flag.Bool("loss", false, "Allow sale of capital losses")
 	taxRate      = flag.Int("tax", 20, "Capital gains tax rate (percent)")
@@ -43,6 +44,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Invalid cap %q: %v", *capGainLimit, err)
 	}
+	market, err := currency.ParseUSD(*marketPrice)
+	if err != nil {
+		log.Fatalf("Invalid market price %q: %v", *marketPrice, err)
+	}
 
 	// Read and parse the input spreadsheet, filtering out entries with 0
 	// available shares, those issued more recently than the specified age, and
@@ -53,10 +58,13 @@ func main() {
 	}
 
 	then := time.Now().AddDate(0, -*ageMonths, 0)
-	es, err := statement.ParseXLS(data, func(e *statement.Entry) bool {
-		return e.Available > 0 && e.Acquired.Before(then) &&
-			(*planFilter == "" || e.Plan == *planFilter) &&
-			(e.Gain >= 0 || *allowLoss)
+	es, err := statement.ParseXLS(data, &statement.Options{
+		Filter: func(e *statement.Entry) bool {
+			return e.Available > 0 && e.Acquired.Before(then) &&
+				(*planFilter == "" || e.Plan == *planFilter) &&
+				(e.Gain >= 0 || *allowLoss)
+		},
+		MarketPrice: market,
 	})
 	if err != nil {
 		log.Fatalf("Parsing statement: %v", err)
@@ -83,6 +91,9 @@ Present value: %s
 Total gains:   %s
 `, *inputPath, *ageMonths, maxGain.USD(), *allowLoss, totalShares,
 		totalBasis.USD(), totalValue.USD(), totalGain.USD())
+	if market > 0 {
+		fmt.Printf("Market price:  %s\n", market.USD())
+	}
 
 	// If requested, print a summary of available shares.
 	if *printSummary {
