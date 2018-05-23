@@ -17,18 +17,42 @@ import (
 	"github.com/extrame/xls"
 )
 
+// Options control the behaviour of a parser.
+type Options struct {
+	// If not nil, select which entries to return.  If nil, all entries are
+	// selected.
+	Filter func(*Entry) bool
+
+	// If set, override the current market value per share.
+	MarketPrice currency.Value
+}
+
+func (o *Options) filter() func(*Entry) bool {
+	if o == nil || o.Filter == nil {
+		return func(*Entry) bool { return true }
+	}
+	return o.Filter
+}
+
+func (o *Options) fixPrice(e *Entry) *Entry {
+	if o != nil && o.MarketPrice > 0 {
+		e.Price = o.MarketPrice
+	}
+	return e
+}
+
 // ParseXLS extracts the gain/loss entries from the statement in data,
-// returning those matched by filter (or all, if filter == nil).
-func ParseXLS(data []byte, filter func(*Entry) bool) ([]*Entry, error) {
+// returning those matched by the options (or all if opts == nil).
+func ParseXLS(data []byte, opts *Options) ([]*Entry, error) {
 	w, err := xls.OpenReader(bytes.NewReader(data), "utf-8")
 	if err != nil {
 		return nil, err
 	}
-	return parseEntries(w.ReadAllCells(math.MaxInt32), filter)
+	return parseEntries(w.ReadAllCells(math.MaxInt32), opts)
 }
 
 // ParseCSV extracts the gain/loss entries from the statement in data,
-// returning those matched by filter (or all, if filter == nil).
+// returning those matched by the options (or all if opts == nil).
 //
 // The input data are expected to have a header row containing the standard
 // fields of the MSSB gain/loss report:
@@ -41,18 +65,18 @@ func ParseXLS(data []byte, filter func(*Entry) bool) ([]*Entry, error) {
 //  Current Market Value:       price as $ddd.cc
 //  Unrealized Total Gain/Loss: price as $ddd.cc (possibly negative)
 //
-func ParseCSV(data []byte, filter func(*Entry) bool) ([]*Entry, error) {
+func ParseCSV(data []byte, opts *Options) ([]*Entry, error) {
 	rows, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
 	if err != nil {
 		return nil, err
 	}
-	return parseEntries(rows, filter)
+	return parseEntries(rows, opts)
 }
 
 // parseEntries converts a slice of rows and columns into entries.
 // If filter == nil all entries are returned, otherwise only those for which
 // the filter returns true.
-func parseEntries(rows [][]string, filter func(*Entry) bool) ([]*Entry, error) {
+func parseEntries(rows [][]string, opts *Options) ([]*Entry, error) {
 	var parser func([]string) (*Entry, error)
 	var i int
 nextRow:
@@ -76,6 +100,7 @@ nextRow:
 	}
 
 	var entries []*Entry
+	filter := opts.filter()
 	for i++; i < len(rows); i++ {
 		if len(rows[i]) == 0 {
 			break // last row
@@ -84,8 +109,8 @@ nextRow:
 		if err != nil {
 			return nil, fmt.Errorf("row %d: %v", i+1, err)
 		}
-		if filter == nil || filter(e) {
-			entries = append(entries, e)
+		if filter(e) {
+			entries = append(entries, opts.fixPrice(e))
 		}
 	}
 	sort.Slice(entries, func(i, j int) bool {
