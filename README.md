@@ -1,5 +1,7 @@
 # stockopt
 
+http://godoc.org/bitbucket.org/creachadair/stockopt
+
 This repository provides a minimalistic stock sale planning tool.  Given a
 report of the current trading price of a collection of shares, the tool chooses
 which shares to sell to maximize the value obtained at that price respecting a
