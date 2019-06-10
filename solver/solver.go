@@ -4,7 +4,7 @@ package solver
 import (
 	"sort"
 
-	"bitbucket.org/creachadair/stockopt/currency"
+	"github.com/creachadair/stockopt/currency"
 )
 
 // An Entry represents a number of shares having a common price (value) and

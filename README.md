@@ -1,6 +1,6 @@
 # stockopt
 
-http://godoc.org/bitbucket.org/creachadair/stockopt
+http://godoc.org/github.com/creachadair/stockopt
 
 This repository provides a minimalistic stock sale planning tool.  Given a
 report of the current trading price of a collection of shares, the tool chooses
