@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -30,6 +32,35 @@ var (
 	allowLoss    = flag.Bool("loss", false, "Allow sale of capital losses")
 	taxRate      = flag.Int("tax", 20, "Capital gains tax rate (percent)")
 )
+
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `Usage: %[1]s -input file.xls -summary  # summarize available shares
+       %[1]s -input file.xls -gain v   # generate a sale profile
+
+Read a MSSB gain/loss report from an .xls file and generate a stock sale
+profile that maximizes total sale value for a given market price without
+exceeding the specified maximum capital gain.
+
+By default:
+
+- The market price is derived from the value stated in the report; use -market
+  to use a different value, e.g., for a limit order.
+
+- Sales resulting in a capital loss are not considered; use -loss to allow the
+  optimizer to include sales resulting in a capital loss in the plan.
+
+- Only shares issued at least 12 months ago (the cutoff for long-term capital
+  gains) are considered for sale; use -age to set a different threshold.
+
+Use -summary to report on all available shares without generating a sale
+profile.
+
+Options:
+`, filepath.Base(os.Args[0]))
+		flag.PrintDefaults()
+	}
+}
 
 func main() {
 	flag.Parse()
