@@ -10,7 +10,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -83,7 +82,7 @@ func main() {
 	// Read and parse the input spreadsheet, filtering out entries with 0
 	// available shares, those issued more recently than the specified age, and
 	// not matching the specified plan filter.
-	data, err := ioutil.ReadFile(*inputPath)
+	data, err := os.ReadFile(*inputPath)
 	if err != nil {
 		log.Fatalf("Reading statement: %v", err)
 	}
