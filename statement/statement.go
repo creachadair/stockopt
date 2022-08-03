@@ -58,14 +58,13 @@ func ParseXLS(data []byte, opts *Options) ([]*Entry, error) {
 // The input data are expected to have a header row containing the standard
 // fields of the MSSB gain/loss report:
 //
-//  Acquired Date:              date as mm/dd/yyyy
-//  Plan Name:                  string
-//  Acquired Price:             price as $ddd.cc
-//  Acquired Via:               string
-//  Shares Available for Sale:  integer
-//  Current Market Value:       price as $ddd.cc
-//  Unrealized Total Gain/Loss: price as $ddd.cc (possibly negative)
-//
+//	Acquired Date:              date as mm/dd/yyyy
+//	Plan Name:                  string
+//	Acquired Price:             price as $ddd.cc
+//	Acquired Via:               string
+//	Shares Available for Sale:  integer
+//	Current Market Value:       price as $ddd.cc
+//	Unrealized Total Gain/Loss: price as $ddd.cc (possibly negative)
 func ParseCSV(data []byte, opts *Options) ([]*Entry, error) {
 	rows, err := csv.NewReader(bytes.NewReader(data)).ReadAll()
 	if err != nil {
