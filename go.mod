@@ -1,6 +1,6 @@
 module github.com/creachadair/stockopt
 
-go 1.20
+go 1.22
 
 require github.com/extrame/xls v0.0.1
 
